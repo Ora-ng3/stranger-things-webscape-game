@@ -1,0 +1,11 @@
+Model Information:
+* title:	Metal Desk
+* source:	https://sketchfab.com/3d-models/metal-desk-d7585fb0086748808ee0a8ed0803efdb
+* author:	HASSAN (https://sketchfab.com/7ASSAN)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Metal Desk" (https://sketchfab.com/3d-models/metal-desk-d7585fb0086748808ee0a8ed0803efdb) by HASSAN (https://sketchfab.com/7ASSAN) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

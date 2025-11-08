@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synthé - Démonstration</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            position: relative;
+            width: fit-content;
+        }
+        #piano-img {
+            display: block;
+            width: auto;
+            height: auto;
+            max-width: 100%;
+        }
+        /* Style pour la surbrillance */
+        .highlight {
+            position: absolute;
+            background: rgba(0, 255, 255, 0.3);
+            pointer-events: none;
+            border-radius: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Image du piano -->
+        <img src="screenshot_piano.png" id="piano-img" usemap="#image-map">
+
+        <!-- Image Map (inchangé) -->
+        <map name="image-map">
+            <area data-note="C3" alt="C3" title="C3" href="#" coords="186,486,155,647,161,668,212,667,209,649,217,588,199,587,197,560,209,487" shape="poly">
+            <area data-note="D3" alt="D3" title="D3" href="#" coords="242,487,227,587,220,587,211,649,215,667,267,667,262,649,270,587,261,587,274,486" shape="poly">
+        </map>
+
+        <!-- SVG pour les surbrillances polygonales -->
+        <svg id="highlights" style="position: absolute; top: 0; left: 0; pointer-events: none; width: 100%; height: 100%;">
+            <polygon id="highlight-C3" points="" fill="rgba(0, 255, 255, 0.3)" stroke="none" style="display: none;"/>
+            <polygon id="highlight-D3" points="" fill="rgba(0, 255, 255, 0.3)" stroke="none" style="display: none;"/>
+        </svg>
+    </div>
+
+
+    <!-- Audio elements (cachés) -->
+    <audio id="audio-C3" src="sounds/C3v15.flac" preload="auto"></audio>
+    <audio id="audio-D3" src="sounds/C4v15.flac" preload="auto"></audio>
+
+    <script>
+        // Coordonnées des polygones (extrait de ton Image Map)
+        const polyCoords = {
+            "C3": "186,486,155,647,161,668,212,667,209,649,217,588,199,587,197,560,209,487",
+            "D3": "242,487,227,587,220,587,211,649,215,667,267,667,262,649,270,587,261,587,274,486"
+        };
+
+        // Fonction pour convertir les coordonnées en tableau de points
+        function parseCoords(coords) {
+            return coords.split(',').map(Number);
+        }
+
+        // Fonction pour vérifier si un point est dans un polygone
+        function isPointInPoly(poly, x, y) {
+            let inside = false;
+            for (let i = 0, j = poly.length - 2; i < poly.length; j = i, i += 2) {
+                const xi = poly[i], yi = poly[i + 1];
+                const xj = poly[j], yj = poly[j + 1];
+                const intersect = ((yi > y) !== (yj > y)) &&
+                    (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        // Fonction pour afficher/masquer la surbrillance polygonale
+        function showHighlight(note, show) {
+            const polygon = document.getElementById(`highlight-${note}`);
+            if (show) {
+                // Convertir les coordonnées de l'area en points pour le SVG
+                const coords = polyCoords[note].split(',').map(Number);
+                let points = '';
+                for (let i = 0; i < coords.length; i += 2) {
+                    points += `${coords[i]},${coords[i + 1]} `;
+                }
+                polygon.setAttribute('points', points);
+                polygon.style.display = 'block';
+            } else {
+                polygon.style.display = 'none';
+            }
+        }
+
+
+        // Gestion des événements
+        document.querySelector('map').addEventListener('mouseover', (e) => {
+            if (e.target.tagName === 'AREA') {
+                const note = e.target.getAttribute('data-note');
+                showHighlight(note, true);
+            }
+        });
+
+        document.querySelector('map').addEventListener('mouseout', (e) => {
+            if (e.target.tagName === 'AREA') {
+                const note = e.target.getAttribute('data-note');
+                showHighlight(note, false);
+            }
+        });
+
+        document.querySelector('map').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (e.target.tagName === 'AREA') {
+                const note = e.target.getAttribute('data-note');
+                const audio = document.getElementById(`audio-${note}`);
+                audio.currentTime = 0;
+                audio.play();
+            }
+        });
+    </script>
+</body>
+</html>

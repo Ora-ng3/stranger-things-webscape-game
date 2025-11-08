@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Piano Game</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1 id="melody-title">Piano Game — select a melody</h1>
+    </header>
+
+    <section class="controls">
+      <label for="melody-select" class="sr-only">Melody selector</label>
+      <div class="melody-select-wrap">
+        <input id="melody-select" type="range" min="1" max="5" value="1" aria-label="Select melody" />
+        <div id="melody-index">1 / 5</div>
+      </div>
+      <div class="buttons" role="group" aria-label="Playback controls">
+        <button id="play" aria-pressed="false">Play</button>
+        <button id="record" aria-pressed="false">Record</button>
+      </div>
+      <div id="countdown" aria-live="polite" class="countdown" hidden></div>
+    </section>
+
+    <section id="sequencer" class="sequencer" aria-label="Sequencer">
+      <div id="sequencer-track" class="sequencer-track"></div>
+      <div id="play-cursor" class="play-cursor" aria-hidden="true"></div>
+    </section>
+
+    <section id="feedback" class="feedback" aria-live="polite"></section>
+
+    <section class="piano-area">
+      <div id="keyboard" class="keyboard" role="application" aria-label="Piano keyboard"></div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

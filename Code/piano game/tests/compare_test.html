@@ -1,0 +1,53 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Compare Test</title></head><body>
+<h3>Compare Performance Unit Tests</h3>
+<pre id="out"></pre>
+<script>
+// Re-implement the comparison function for unit tests (same logic as app.js)
+function comparePerformance(recorded, melody){
+  const beatMs = 60000 / melody.tempo;
+  const tolerance = 200; // ms
+  const recUsed = new Array(recorded.length).fill(false);
+  let matches = 0;
+  const perNote = melody.notes.map((tgt, i) => {
+    const targetMs = tgt.start * beatMs;
+    let matchedIndex = -1;
+    for (let r=0;r<recorded.length;r++){
+      if (recUsed[r]) continue;
+      if (recorded[r].note === tgt.note){
+        const dt = recorded[r].time - targetMs;
+        if (Math.abs(dt) <= tolerance){ matchedIndex = r; recUsed[r]=true; break; }
+      }
+    }
+    if (matchedIndex>=0) { matches++; return {ok:true, note:tgt.note, targetMs}; }
+    return {ok:false, note:tgt.note, targetMs};
+  });
+  const score = Math.round(100 * matches / melody.notes.length);
+  return {matches, total: melody.notes.length, score, perNote};
+}
+
+// Simple test melodies
+const melody = { tempo: 120, notes:[{note:'C4',start:0},{note:'D4',start:1},{note:'E4',start:2}] };
+const beatMs = 60000/melody.tempo;
+
+const tests = [];
+// perfect match
+tests.push({ recorded:[{note:'C4',time:0},{note:'D4',time:beatMs},{note:'E4',time:2*beatMs}], expect:100 });
+// slight offsets within tolerance
+tests.push({ recorded:[{note:'C4',time:80},{note:'D4',time:beatMs+150},{note:'E4',time:2*beatMs-150}], expect:100 });
+// one miss
+tests.push({ recorded:[{note:'C4',time:0},{note:'E4',time:2*beatMs}], expect:67 });
+// wrong pitch
+tests.push({ recorded:[{note:'C4',time:0},{note:'D#4',time:beatMs},{note:'E4',time:2*beatMs}], expect:67 });
+
+const out = document.getElementById('out');
+let s='';
+tests.forEach((t,i)=>{
+  const res = comparePerformance(t.recorded, melody);
+  const pass = res.score === t.expect;
+  s += `Test ${i+1}: expected ${t.expect} got ${res.score} => ${pass? 'PASS':'FAIL'}\n`;
+  s += JSON.stringify(res) + '\n\n';
+});
+out.textContent = s;
+</script>
+</body></html>
