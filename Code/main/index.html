@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webscape Game</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+            overflow: hidden;
+            font-family: sans-serif;
+            color: white;
+        }
+        #view-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        img#main-bg, .anim-player {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        img#main-bg {
+            z-index: 10;
+        }
+        .anim-player {
+            display: none; /* hidden until needed */
+        }
+        
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Let clicks pass through except on buttons */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 100; /* Always on top */
+        }
+
+        .top-bar {
+            padding: 20px;
+            display: flex;
+            justify-content: flex-end;
+            pointer-events: auto;
+        }
+
+        .bottom-bar {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            pointer-events: auto;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid white;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="view-container">
+        <!-- We use two video players for double buffering -->
+        <video id="player-1" class="anim-player" playsinline muted></video>
+        <video id="player-2" class="anim-player" playsinline muted></video>
+        <img id="main-bg" src="ressources/Main.png" alt="Main View" />
+        
+        <div id="ui-layer">
+            <div class="top-bar">
+                <button id="btn-back" class="hidden">Back</button>
+            </div>
+            <div class="bottom-bar" id="options-container">
+                <!-- Navigation buttons will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const graph = {
+            "Main": {
+                options: [
+                    { id: "Bedroom", label: "Bedroom", video: "Main_to_Bedroom" },
+                    { id: "Elec_Lab", label: "Elec Lab", video: "Main_to_Elec_Lab" },
+                    { id: "Exit", label: "Exit", video: "Main_to_Exit" },
+                    { id: "Music", label: "Music", video: "Main_to_Music" }
+                ],
+                parent: null
+            },
+            "Bedroom": {
+                options: [
+                    { id: "SHS", label: "SHS", video: "Bedroom_to_SHS" },
+                    { id: "ST_Poster", label: "ST Poster", video: "Bedroom_to_ST_Poster" }
+                ],
+                parent: { id: "Main", video: "Main_to_Bedroom" }
+            },
+            "Elec_Lab": {
+                options: [
+                    { id: "Box", label: "Box", video: "Elec_Lab_to_Box_WithCable" },
+                    { id: "Desk", label: "Desk", video: "Elec_Lab_to_Desk_WithCable" }
+                ],
+                parent: { id: "Main", video: "Main_to_Elec_Lab" }
+            },
+            "Music": {
+                options: [
+                    { id: "Donald", label: "Donald", video: "Music_to_Donald" },
+                    { id: "Synth", label: "Synth", video: "Music_to_Synth" }
+                ],
+                parent: { id: "Main", video: "Main_to_Music" }
+            },
+            "SHS": { options: [], parent: { id: "Bedroom", video: "Bedroom_to_SHS" } },
+            "ST_Poster": { options: [], parent: { id: "Bedroom", video: "Bedroom_to_ST_Poster" } },
+            "Box": { options: [], parent: { id: "Elec_Lab", video: "Elec_Lab_to_Box_WithCable" } },
+            "Desk": { options: [], parent: { id: "Elec_Lab", video: "Elec_Lab_to_Desk_WithCable" } },
+            "Exit": { options: [], parent: { id: "Main", video: "Main_to_Exit" } },
+            "Donald": { options: [], parent: { id: "Music", video: "Music_to_Donald" } },
+            "Synth": { options: [], parent: { id: "Music", video: "Music_to_Synth" } },
+        };
+
+        let currentNode = "Main";
+        let isAnimating = false;
+
+        const mainBg = document.getElementById('main-bg');
+        const optionsContainer = document.getElementById('options-container');
+        const btnBack = document.getElementById('btn-back');
+
+        // Double Buffering Setup
+        const player1 = document.getElementById('player-1');
+        const player2 = document.getElementById('player-2');
+        let activePlayer = player1; // The player currently visible holding the last frame
+
+        function renderUI() {
+            // Clear current options
+            optionsContainer.innerHTML = '';
+            
+            // Render new options
+            const nodeData = graph[currentNode];
+            nodeData.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.textContent = opt.label;
+                btn.onclick = () => playTransition(opt.video, opt.id, false);
+                optionsContainer.appendChild(btn);
+            });
+
+            // Handle Back button visibility
+            if (nodeData.parent !== null) {
+                btnBack.classList.remove('hidden');
+                btnBack.onclick = () => playTransition(nodeData.parent.video, nodeData.parent.id, true);
+            } else {
+                btnBack.classList.add('hidden');
+            }
+        }
+
+        async function playTransition(videoName, targetNode, isReverse) {
+            if (isAnimating) return;
+            isAnimating = true;
+            
+            // Hide UI during transition
+            optionsContainer.classList.add('hidden');
+            btnBack.classList.add('hidden');
+
+            // 1. Prepare target video path
+            // For reverse, we load the "_reverse.mp4" file that ffmpeg baked for us
+            const videoPath = isReverse ? `ressources/${videoName}_reverse.mp4` : `ressources/${videoName}.mp4`;
+            
+            // 2. Select the secondary player
+            const nextPlayer = (activePlayer === player1) ? player2 : player1;
+            
+            // 3. Load the video into the hidden secondary player
+            nextPlayer.src = videoPath;
+            nextPlayer.load();
+
+            // Wait for the next player to have enough data to visually project the first frame
+            await new Promise(res => {
+                if (nextPlayer.readyState >= 3) res(); // HAVE_FUTURE_DATA
+                else nextPlayer.addEventListener('canplay', res, { once: true });
+            });
+
+            // 4. Overlap manipulation
+            // The active player (holding the old frame) drops below
+            activePlayer.style.zIndex = 1;
+            // The new player goes above it
+            nextPlayer.style.zIndex = 2;
+            nextPlayer.style.display = 'block';
+
+            // Once we're sure nextPlayer has painted to screen on next animation frame
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    // Start playing!
+                    nextPlayer.currentTime = 0;
+                    nextPlayer.play();
+                    
+                    // Hide the initial static image if it's still showing
+                    mainBg.style.display = 'none';
+
+                    nextPlayer.onended = () => {
+                        nextPlayer.onended = null;
+                        
+                        // We made it to the end, the new player is now the active holding frame
+                        // We safely hide the old player to free up GPU draw cycles
+                        activePlayer.style.display = 'none';
+                        activePlayer = nextPlayer;
+
+                        // State updates
+                        currentNode = targetNode;
+                        isAnimating = false;
+
+                        // If returning to Main, we bring back the static Main image perfectly flush
+                        if (currentNode === "Main") {
+                            mainBg.style.zIndex = 3;
+                            mainBg.style.display = 'block';
+                            activePlayer.style.display = 'none';
+                        }
+                        
+                        renderUI();
+                        optionsContainer.classList.remove('hidden');
+                    };
+                });
+            });
+        }
+
+        renderUI();
+    </script>
+</body>
+</html>
