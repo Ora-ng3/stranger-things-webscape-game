@@ -5,7 +5,7 @@ import subprocess
 script_dir = os.path.dirname(__file__)
 workspace_dir = os.path.dirname(script_dir)
 renders_dir = os.path.join(workspace_dir, "renders")
-output_dir = os.path.join(workspace_dir, "Code", "main", "ressources")
+output_dir = os.path.join(workspace_dir, "Code", "main", "assets", "animations")
 
 # Create output directory if it doesn't exist
 if not os.path.exists(output_dir):

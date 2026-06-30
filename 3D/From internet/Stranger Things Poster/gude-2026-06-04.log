@@ -1,0 +1,6 @@
+16:21:46:378 [CRITICAL]	SharedConnection - Failed to open WinHTTP Session. The parameter is incorrect.
+, last error code = 87 
+16:21:46:382 [ERROR]	Failed to Configure Secure Protocols. WinHTTP Incorrect Handle Type. last error code = 12018 
+16:24:35:924 [CRITICAL]	SharedConnection - Failed to open WinHTTP Session. The parameter is incorrect.
+, last error code = 87 
+16:24:35:924 [ERROR]	Failed to Configure Secure Protocols. WinHTTP Incorrect Handle Type. last error code = 12018 
